@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Retro Car Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .game-container {
+            width: 400px;
+            height: 600px;
+            background: #333;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        .road {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background: #222;
+            background-image: linear-gradient(90deg, #fff 10px, transparent 10px), linear-gradient(90deg, transparent calc(100% - 10px), #fff calc(100% - 10px));
+            background-size: 100% 100%;
+        }
+        .line {
+            width: 10px;
+            height: 80px;
+            background: #fff;
+            position: absolute;
+            left: 195px;
+            top: -100px;
+        }
+        .car, .enemy {
+            width: 50px;
+            height: 90px;
+            position: absolute;
+            bottom: 20px;
+            left: 175px;
+            background: #ff2a2a;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .car::before, .enemy::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 5px;
+            right: 5px;
+            height: 20px;
+            background: #88ccff;
+            border-radius: 4px;
+        }
+        .enemy {
+            background: #2a75ff;
+            top: -100px;
+            bottom: auto;
+        }
+        .score-board {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 12px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+        }
+        .start-screen h1 {
+            margin-bottom: 20px;
+            color: #ffcc00;
+        }
+        .start-screen p {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        .btn {
+            background: #ffcc00;
+            color: #111;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #ff9900;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="score-board">Score: <span id="score">0</span></div>
+        <div class="road" id="road">
+            <div class="line" style="top: 0px;"></div>
+            <div class="line" style="top: 250px;"></div>
+            <div class="line" style="top: 500px;"></div>
+        </div>
+        <div class="car" id="playerCar"></div>
+        <div class="enemy" id="enemyCar"></div>
+        
+        <div class="start-screen" id="startScreen">
+            <h1>Car Dodger</h1>
+            <p>Use <b>Left & Right Arrow Keys</b> to move and avoid the blue car!</p>
+            <button class="btn" onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        const playerCar = document.getElementById('playerCar');
+        const enemyCar = document.getElementById('enemyCar');
+        const scoreDisplay = document.getElementById('score');
+        const startScreen = document.getElementById('startScreen');
+        const lines = document.querySelectorAll('.line');
+
+        let score = 0;
+        let gameInterval;
+        let roadSpeed = 5;
+        let isPlaying = false;
+        let playerX = 175;
+        let enemyX = 175;
+        let enemyY = -100;
+        let keys = { ArrowLeft: false, ArrowRight: false };
+
+        window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            score = 0;
+            playerX = 175;
+            enemyY = -100;
+            enemyX = Math.random() < 0.5 ? 110 : 240;
+            roadSpeed = 6;
+            isPlaying = true;
+            gameInterval = requestAnimationFrame(updateGame);
+        }
+
+        function updateGame() {
+            if (!isPlaying) return;
+
+            // Player movement
+            if (keys.ArrowLeft && playerX > 90) playerX -= 5;
+            if (keys.ArrowRight && playerX < 260) playerX += 5;
+            playerCar.style.left = playerX + 'px';
+
+            // Move road lines
+            lines.forEach(line => {
+                let top = parseInt(line.style.top);
+                top += roadSpeed;
+                if (top > 600) top = -100;
+                line.style.top = top + 'px';
+            });
+
+            // Move enemy
+            enemyY += roadSpeed;
+            if (enemyY > 600) {
+                enemyY = -100;
+                enemyX = Math.random() < 0.5 ? 110 : 240;
+                score += 10;
+                scoreDisplay.innerText = score;
+                roadSpeed += 0.2; // Increase difficulty
+            }
+            enemyCar.style.top = enemyY + 'px';
+            enemyCar.style.left = enemyX + 'px';
+
+            // Collision detection
+            if (enemyY + 90 >= 490 && enemyY <= 580 && Math.abs(playerX - enemyX) < 40) {
+                isPlaying = false;
+                cancelAnimationFrame(gameInterval);
+                startScreen.style.display = 'flex';
+                startScreen.querySelector('h1').innerText = 'Game Over!';
+                startScreen.querySelector('p').innerText = `Your Final Score: ${score}. Try again?`;
+                return;
+            }
+
+            gameInterval = requestAnimationFrame(updateGame);
+        }
+    </script>
+</body>
+</html>
